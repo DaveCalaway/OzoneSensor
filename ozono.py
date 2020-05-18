@@ -17,25 +17,25 @@ channel = 1
 address = 0x73
 
 # Mode
-global measure_mode_auto = 0x00
-global measure_mode_passive = 0x01
+measure_mode_auto = 0x00
+measure_mode_passive = 0x01
 
 # register address
-global auto_read_data = 0x00 
-global passive_read_data = 0x01 
-global mode_register = 0x03
-global read_ozone_data_register = 0x04
-global AUTO_data_high_eight_bits = 0x09
-global AUTO_data_low_eight_bits = 0x0A
-global PASS_data_low_eight_bits = 0x08
-global PASS_data_high_eight_bits = 0x07
+auto_read_data = 0x00 
+passive_read_data = 0x01 
+mode_register = 0x03
+read_ozone_data_register = 0x04
+AUTO_data_high_eight_bits = 0x09
+AUTO_data_low_eight_bits = 0x0A
+PASS_data_low_eight_bits = 0x08
+PASS_data_high_eight_bits = 0x07
 
 # variables
-global DEBUG = 1
-global OCOUNT = 100
-global m_flag = 0
-global collect_number = 20 # 1-100
-global OzoneData = [0x00] * OCOUNT
+DEBUG = 1
+OCOUNT = 100
+m_flag = 0
+collect_number = 20 # 1-100
+OzoneData = [0x00] * OCOUNT
 
 
 
@@ -64,6 +64,8 @@ sleep(1)
 
 # SetModes
 def setModes(mode, address):
+    global measure_mode_auto, bus, measure_mode_passive, m_flag, mode_register
+
     if mode == measure_mode_auto:
         # Bus.write_byte_data(Device Address, Register Address, Value)
         bus.write_byte_data(address, mode_register, measure_mode_auto)
@@ -79,6 +81,8 @@ def setModes(mode, address):
 
 # ReadOzoneData
 def ReadOzoneData(CollectNum, address):
+    global bus, m_flag, auto_read_data, read_ozone_data_register, AUTO_data_high_eight_bits, OzoneData, passive_read_data, PASS_data_high_eight_bits
+
     i = 0
     if CollectNum > 0:
         #for(j = CollectNum - 1;  j > 0; j--):
@@ -86,7 +90,7 @@ def ReadOzoneData(CollectNum, address):
             OzoneData[j] = OzoneData[j-1]
         if m_flag == 0:
             # read active data in active mode, first request once, then read the data
-            bus.write_byte_data(address, SET_PASSIVE_REGISTER, auto_read_data)    
+            bus.write_byte_data(address, read_ozone_data_register, auto_read_data)    
             sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, AUTO_data_high_eight_bits)
             if DEBUG:
@@ -94,7 +98,7 @@ def ReadOzoneData(CollectNum, address):
                 print("Ozone Data: ", OzoneData[0])
         if m_flag == 1:
             # read passive data in passive mode, first request once, then read the data
-            bus.write_byte_data(address, SET_PASSIVE_REGISTER, passive_read_data)    
+            bus.write_byte_data(address, read_ozone_data_register, passive_read_data)    
             sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, PASS_data_high_eight_bits)
             if DEBUG:
@@ -120,6 +124,8 @@ def getAverageNum(bArray, iFilterLen):
 
 # i2cReadOzoneData
 def i2cReadOzoneData(address, reg):
+    global bus
+
     bus.write_byte(address, reg)
     sleep(0.01)
 
