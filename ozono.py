@@ -5,6 +5,7 @@
 # https://raspberry-projects.com/pi/programming-in-python/i2c-programming-in-python/using-the-i2c-interface-2
 # https://www.electronicwings.com/raspberry-pi/python-based-i2c-functions-for-raspberry-pi
 # http://wiki.erazor-zone.de/wiki:linux:python:smbus:doc
+# https://embeddedmicro.weebly.com/raspberry-pi.html
 
 import smbus
 from time import sleep
@@ -12,34 +13,29 @@ from time import sleep
 # I2C channel 1 is connected to the GPIO pins
 channel = 1
 
-# Ozone Sensor
-# 0x70 - 0x71 - 0x72 - 0x73 ( default )
+# Ozone Sensor - 0x70 - 0x71 - 0x72 - 0x73 ( default )
 address = 0x73
 
 # Mode
 global measure_mode_auto = 0x00
 global measure_mode_passive = 0x01
 
-# 
+# register address
 global auto_read_data = 0x00 
 global passive_read_data = 0x01 
-
-# 
 global mode_register = 0x03
 global read_ozone_data_register = 0x04
-
-#
 global AUTO_data_high_eight_bits = 0x09
 global AUTO_data_low_eight_bits = 0x0A
-
-#
 global PASS_data_low_eight_bits = 0x08
 global PASS_data_high_eight_bits = 0x07
 
+# variables
+global DEBUG = 1
 global OCOUNT = 100
 global m_flag = 0
 global collect_number = 20 # 1-100
-global OzoneData = [0] * OCOUNT
+global OzoneData = [0x00] * OCOUNT
 
 
 
@@ -51,7 +47,6 @@ print("Open i2c bus on channel: {}".format(channel))
 bus = smbus.SMBus(channel)
 
 # SetModes
-# Write out I2C command: address, reg_write_dac, msg[0], msg[1]
 print("Set the mode to: {} for the address: {}".format(measure_mode_passive, address))
 setModes(measure_mode_passive, address)
 
@@ -90,15 +85,21 @@ def ReadOzoneData(CollectNum, address):
         for j in range(CollectNum - 1, j > 0, -1):
             OzoneData[j] = OzoneData[j-1]
         if m_flag == 0:
-            # read active data in active mode
+            # read active data in active mode, first request once, then read the data
             bus.write_byte_data(address, SET_PASSIVE_REGISTER, auto_read_data)    
             sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, AUTO_data_high_eight_bits)
+            if DEBUG:
+                print("Read active data in active mod")
+                print("Ozone Data: ", OzoneData[0])
         if m_flag == 1:
             # read passive data in passive mode, first request once, then read the data
             bus.write_byte_data(address, SET_PASSIVE_REGISTER, passive_read_data)    
-            sleep(0.01);    # read active data in active mode
+            sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, PASS_data_high_eight_bits)
+            if DEBUG:
+                print("Read passive data in passive mod")
+                print("Ozone Data: ", OzoneData[0])
         if i < CollectNum:
             i = i + 1
         return getAverageNum(OzoneData, i)
@@ -125,8 +126,10 @@ def i2cReadOzoneData(address, reg):
     # Wire.requestFrom(address, (uint8_t)2); // request 2 bytes from slave device address
     #     while (Wire.available())
     #         rxbuf[i++] = Wire.read();
+
     # bus.read_word_data(address,cmd)
     rxbuf = bus.read_word_data(address, 0x00)
 
-    return (rxbuf[0] << 8) + rxbuf[1]
+    # return (rxbuf[0] << 8) + rxbuf[1]
+    return rxbuf
     
