@@ -8,7 +8,8 @@
 # https://embeddedmicro.weebly.com/raspberry-pi.html
 
 import smbus
-from time import sleep
+import time
+
 
 # I2C channel 1 is connected to the GPIO pins
 channel = 1
@@ -38,26 +39,6 @@ collect_number = 20 # 1-100
 OzoneData = [0x00] * OCOUNT
 
 
-
-########################################
-            ### MAIN ####
-########################################
-# Initialize I2C (SMBus)
-print("Open i2c bus on channel: {}".format(channel))
-bus = smbus.SMBus(channel)
-
-# SetModes
-print("Set the mode to: {} for the address: {}".format(measure_mode_passive, address))
-setModes(measure_mode_passive, address)
-
-# ReadOzoneData
-print("Read data from the sensor")
-ozoneConcentration = ReadOzoneData(collect_number, address)
-print("Ozone concentration is {} PPB.".format(ozoneConcentration))
-sleep(1)
-
-
-
 ########################################
             ### FUNCTS ####
 ########################################
@@ -81,9 +62,11 @@ def setModes(mode, address):
 
 # ReadOzoneData
 def ReadOzoneData(CollectNum, address):
-    global bus, m_flag, auto_read_data, read_ozone_data_register, AUTO_data_high_eight_bits, OzoneData, passive_read_data, PASS_data_high_eight_bits
-
+    global bus, m_flag, auto_read_data, read_ozone_data_register, AUTO_data_high_eight_bits, OzoneData, passive_read_data, PASS_data_high_eight_bits, DEBUG
+    
     i = 0
+    j = 0
+
     if CollectNum > 0:
         #for(j = CollectNum - 1;  j > 0; j--):
         for j in range(CollectNum - 1, j > 0, -1):
@@ -95,15 +78,15 @@ def ReadOzoneData(CollectNum, address):
             OzoneData[0] = i2cReadOzoneData(address, AUTO_data_high_eight_bits)
             if DEBUG:
                 print("Read active data in active mod")
-                print("Ozone Data: ", OzoneData[0])
+                print("Word Ozone Data: ", OzoneData[0])
         if m_flag == 1:
             # read passive data in passive mode, first request once, then read the data
             bus.write_byte_data(address, read_ozone_data_register, passive_read_data)    
-            sleep(0.01);    
+            time.sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, PASS_data_high_eight_bits)
             if DEBUG:
                 print("Read passive data in passive mod")
-                print("Ozone Data: ", OzoneData[0])
+                print("Word Ozone Data: ", OzoneData[0])
         if i < CollectNum:
             i = i + 1
         return getAverageNum(OzoneData, i)
@@ -117,25 +100,52 @@ def getAverageNum(bArray, iFilterLen):
     bTemp = 0
     #for(i = 0; i < iFilterLen; i++):
     for i in range(iFilterLen):
-        bTemp += bArray[i]
+        bTemp = bTemp + bArray[i]
     return bTemp / iFilterLen
 
 
 
 # i2cReadOzoneData
 def i2cReadOzoneData(address, reg):
-    global bus
+    global bus, DEBUG
 
     bus.write_byte(address, reg)
-    sleep(0.01)
+    time.sleep(0.01)
 
     # Wire.requestFrom(address, (uint8_t)2); // request 2 bytes from slave device address
     #     while (Wire.available())
     #         rxbuf[i++] = Wire.read();
-
+    if DEBUG:
+        first = bus.read_byte_data(address, 0x00)
+        second = bus.read_byte_data(address, 0x01)
+        print("first bytes: {}".format(first))
+        print("second bytes: {}".format(second))
+        result = (first << 8) + second
+        print("bit shift: {}".format(result))
     # bus.read_word_data(address,cmd)
     rxbuf = bus.read_word_data(address, 0x00)
-
     # return (rxbuf[0] << 8) + rxbuf[1]
     return rxbuf
-    
+
+
+
+########################################
+            ### MAIN ####
+########################################
+# Initialize I2C (SMBus)
+print("Open i2c bus on channel: {}".format(channel))
+bus = smbus.SMBus(channel)
+
+# SetModes
+print("Set the mode to: {} for the address: {}".format(measure_mode_passive, hex(address)))
+setModes(measure_mode_passive, address)
+
+# ReadOzoneData
+while True:
+    time.sleep(1.0)
+    print("Read data from the sensor")
+    ozoneConcentration = ReadOzoneData(collect_number, address)
+    print("Ozone concentration is {} PPB.".format(ozoneConcentration))
+    print("##########################################################################")
+
+
