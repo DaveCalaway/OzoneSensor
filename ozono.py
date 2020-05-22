@@ -71,9 +71,14 @@ def ReadOzoneData(CollectNum, address):
         #for(j = CollectNum - 1;  j > 0; j--):
         for j in range(CollectNum - 1, j > 0, -1):
             OzoneData[j] = OzoneData[j-1]
+            print(OzoneData[j])
         if m_flag == 0:
             # read active data in active mode, first request once, then read the data
-            bus.write_byte_data(address, read_ozone_data_register, auto_read_data)    
+            bus.write_byte_data(address, read_ozone_data_register, auto_read_data) 
+            if DEBUG: 
+                sleep(0.01); 
+                read = bus.read_byte_data(address, read_ozone_data_register) 
+                print("i wrote: {} and i read: {}".format(hex(auto_read_data),hex(read)))
             sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, AUTO_data_high_eight_bits)
             if DEBUG:
@@ -82,6 +87,10 @@ def ReadOzoneData(CollectNum, address):
         if m_flag == 1:
             # read passive data in passive mode, first request once, then read the data
             bus.write_byte_data(address, read_ozone_data_register, passive_read_data)    
+            if DEBUG: 
+                sleep(0.01); 
+                read = bus.read_byte_data(address, read_ozone_data_register) 
+                print("i wrote: {} and i read: {}".format(hex(passive_read_data),hex(read)))
             time.sleep(0.01);    
             OzoneData[0] = i2cReadOzoneData(address, PASS_data_high_eight_bits)
             if DEBUG:
@@ -117,14 +126,15 @@ def i2cReadOzoneData(address, reg):
     #         rxbuf[i++] = Wire.read();
     if DEBUG:
         first = bus.read_byte_data(address, 0x00)
+        time.sleep(0.01)
         second = bus.read_byte_data(address, 0x01)
+        time.sleep(0.01)
         print("first bytes: {}".format(first))
         print("second bytes: {}".format(second))
         result = (first << 8) + second
         print("bit shift: {}".format(result))
     # bus.read_word_data(address,cmd)
     rxbuf = bus.read_word_data(address, 0x00)
-    # return (rxbuf[0] << 8) + rxbuf[1]
     return rxbuf
 
 
