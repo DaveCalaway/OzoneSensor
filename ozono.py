@@ -138,9 +138,9 @@ def i2cReadOzoneData(address, reg):
     ## bus.read_word_data(address,cmd)
     #rxbuf = bus.read_word_data(address, 0x00)
 
-    first = bus.read_byte_data(address)
+    first = bus.read_byte(address)
     time.sleep(0.01)
-    second = bus.read_byte_data(address)
+    second = bus.read_byte(address)
     time.sleep(0.01)
     print("first bytes: {}".format(first))
     print("second bytes: {}".format(second))
