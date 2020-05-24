@@ -124,17 +124,29 @@ def i2cReadOzoneData(address, reg):
     # Wire.requestFrom(address, (uint8_t)2); // request 2 bytes from slave device address
     #     while (Wire.available())
     #         rxbuf[i++] = Wire.read();
-    if DEBUG:
-        first = bus.read_byte_data(address, 0x00)
-        time.sleep(0.01)
-        second = bus.read_byte_data(address, 0x01)
-        time.sleep(0.01)
-        print("first bytes: {}".format(first))
-        print("second bytes: {}".format(second))
-        result = (first << 8) + second
-        print("bit shift: {}".format(result))
-    # bus.read_word_data(address,cmd)
-    rxbuf = bus.read_word_data(address, 0x00)
+
+    # if DEBUG:
+    #     first = bus.read_byte_data(address, 0x00)
+    #     time.sleep(0.01)
+    #     second = bus.read_byte_data(address, 0x01)
+    #     time.sleep(0.01)
+    #     print("first bytes: {}".format(first))
+    #     print("second bytes: {}".format(second))
+    #     result = (first << 8) + second
+    #     print("bit shift: {}".format(result))
+
+    ## bus.read_word_data(address,cmd)
+    #rxbuf = bus.read_word_data(address, 0x00)
+
+    first = bus.read_byte_data(address)
+    time.sleep(0.01)
+    second = bus.read_byte_data(address)
+    time.sleep(0.01)
+    print("first bytes: {}".format(first))
+    print("second bytes: {}".format(second))
+    result = (first << 8) + second
+    print("bit shift: {}".format(result))
+    rxbuf = result
     return rxbuf
 
 
