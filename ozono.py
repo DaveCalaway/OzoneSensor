@@ -76,10 +76,10 @@ def ReadOzoneData(CollectNum, address):
             # read active data in active mode, first request once, then read the data
             bus.write_byte_data(address, read_ozone_data_register, auto_read_data) 
             if DEBUG: 
-                sleep(0.01); 
+                time.sleep(0.1); 
                 read = bus.read_byte_data(address, read_ozone_data_register) 
                 print("i wrote: {} and i read: {}".format(hex(auto_read_data),hex(read)))
-            sleep(0.01);    
+            time.sleep(0.1);    
             OzoneData[0] = i2cReadOzoneData(address, AUTO_data_high_eight_bits)
             if DEBUG:
                 print("Read active data in active mod")
@@ -88,10 +88,10 @@ def ReadOzoneData(CollectNum, address):
             # read passive data in passive mode, first request once, then read the data
             bus.write_byte_data(address, read_ozone_data_register, passive_read_data)    
             if DEBUG: 
-                sleep(0.01); 
+                time.sleep(0.1); 
                 read = bus.read_byte_data(address, read_ozone_data_register) 
                 print("i wrote: {} and i read: {}".format(hex(passive_read_data),hex(read)))
-            time.sleep(0.01);    
+            time.sleep(0.1);    
             OzoneData[0] = i2cReadOzoneData(address, PASS_data_high_eight_bits)
             if DEBUG:
                 print("Read passive data in passive mod")
@@ -119,35 +119,16 @@ def i2cReadOzoneData(address, reg):
     global bus, DEBUG
 
     bus.write_byte(address, reg)
-    time.sleep(0.01)
+    time.sleep(0.1)
 
-    # Wire.requestFrom(address, (uint8_t)2); // request 2 bytes from slave device address
-    #     while (Wire.available())
-    #         rxbuf[i++] = Wire.read();
-
-    # if DEBUG:
-    #     first = bus.read_byte_data(address, 0x00)
-    #     time.sleep(0.01)
-    #     second = bus.read_byte_data(address, 0x01)
-    #     time.sleep(0.01)
-    #     print("first bytes: {}".format(first))
-    #     print("second bytes: {}".format(second))
-    #     result = (first << 8) + second
-    #     print("bit shift: {}".format(result))
-
-    ## bus.read_word_data(address,cmd)
-    #rxbuf = bus.read_word_data(address, 0x00)
-
-    first = bus.read_byte_data(address)
-    time.sleep(0.01)
-    second = bus.read_byte_data(address)
-    time.sleep(0.01)
-    print("first bytes: {}".format(first))
-    print("second bytes: {}".format(second))
-    result = (first << 8) + second
-    print("bit shift: {}".format(result))
-    rxbuf = result
-    return rxbuf
+    # read 2 bytes from the sensor
+    rxbuf = bus.read_i2c_block_data(address, reg, 2)
+    # convert byte in a word
+    O3_ppb = (rxbuf[0] << 8) + rxbuf[1]
+    if DEBUG:
+        print(O3_ppb)
+    # send back the converted ppb to ppm
+    return O3_ppb/1000
 
 
 
@@ -161,11 +142,11 @@ bus = smbus.SMBus(channel)
 # SetModes
 print("Set the mode to: {} for the address: {}".format(measure_mode_passive, hex(address)))
 setModes(measure_mode_passive, address)
+print("Read data from the sensor")
 
 # ReadOzoneData
 while True:
     time.sleep(1.0)
-    print("Read data from the sensor")
     ozoneConcentration = ReadOzoneData(collect_number, address)
     print("Ozone concentration is {} PPB.".format(ozoneConcentration))
     print("##########################################################################")
